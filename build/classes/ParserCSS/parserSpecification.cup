@@ -1,0 +1,282 @@
+/****************************************************************************/
+/*-------------------------------C-S-S parser-------------------------------*/
+/****************************************************************************/
+
+//-----------------User code----------------
+//importacion y paquete
+package ParserCSS;
+import java_cup.runtime.Symbol;
+import java_cup.runtime.*;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.awt.Color;
+import MyObjects.MyError.MyErrorType;
+import MyObjects.MyError.Phase;
+import MyObjects.MyError;
+import ParserCSS.CssNode.NodeTag;
+
+init with {:
+    if(!(getScanner() instanceof Lexer)){
+        System.out.println("El escaner del CSS parser no tiene un path a un archivo");
+    }
+    else{
+        Lexer tmp = (Lexer) getScanner();
+        path = tmp.getPath();
+    }
+:}
+
+parser code
+{:
+    public CssNode root;
+    
+    private String path = "null"; //Chapuz minimo para evitar conflictos con null
+
+    public void syntax_error(Symbol s)
+    {        
+        int linea = s.left;
+        int columna = s.right;
+
+        MyError error = new MyError(MyErrorType.SYNTAX, Phase.CSS, path, linea, columna, "Error cerca de: " + sym.terminalNames[s.sym]);
+        report_error(error.msg, error);
+    }
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception
+    {        
+        int linea = s.left;
+        int columna = s.right;
+        MyError error = new MyError(MyErrorType.SYNTAX, Phase.CSS,  path, linea, columna, "Error fatal cerca de: " + sym.terminalNames[s.sym]);
+        report_fatal_error(error.msg + " linea: " + linea, error);
+    }
+    public void report_error(String message, Object info){
+        MySystem.Console.println((MyError)info);
+        //Pasar a consola
+        //MyGui.MainJFrame.logln((MyError) info);
+    }
+    public void report_fatal_error(String message, Object info){
+        MySystem.Console.println((MyError)info);
+        root = null;
+        //Pasar a consola
+        //MyGui.MainJFrame.logln((MyError) info);
+        done_parsing();
+    }
+:}
+
+action code
+{:
+    private HashMap<Integer, Object> properties = new HashMap<Integer, Object>();
+    private HashMap<Integer, Object> subproperties = new HashMap<Integer, Object>();
+
+    private class MyProperty{
+        public Integer key;
+        public Object value;
+
+        public MyProperty(Integer key, Object value){
+            this.key = key;
+            this.value = value;
+        }
+    }
+
+    private class SubclassKey{
+        public String id;
+        public int line;
+        public int column;
+        
+        public SubclassKey(String id, int line, int column){
+            this.id = id;
+            this.line = line;
+            this.column = column;
+        }
+    }
+:}
+
+//Palabras reservadas:
+terminal          HEIGHT, WIDTH, BACKGROUND, BORDER, BORDER_COLOR, BORDER_WIDTH, ALIGN, FONT, FONT_SIZE, FONT_COLOR, RGB;
+//Colores
+terminal Integer COLOR_NAME;
+//Operadores, separadores y llaves
+terminal          O_PAREN, C_PAREN, O_CURLY, C_CURLY, SEMICOLON, COMMA, DOT, COLON;
+//Literals
+terminal String   STRING_LITERAL;
+terminal Integer  NUMBER_LITERAL;
+terminal Integer  HEX_COLOR;
+terminal Boolean  BOOL_LITERAL;
+terminal Integer  ALIGN_LITERAL;
+//Non literals
+terminal String   IDENTIFIER;
+
+/* Non-terminals */
+non terminal CssNode                    s;
+non terminal MyProperty                 property;
+non terminal CssNode                    l_classes, _class, subclass, l_subclasses_, l_subclasses;
+non terminal                            l_properties, l_subproperties;
+non terminal Color                      color_value;
+
+/* Precedences */
+
+/* The grammar */
+s ::= l_classes:l_cl
+        {:
+             //System.out.println("Si");
+             root = l_cl;
+             RESULT = l_cl;
+             RESULT.setValue(path);
+             //aqui 1234
+        :}
+      |
+        {:
+            root = null;
+            RESULT = null;
+        :}
+      /*empty*/
+;
+
+l_classes ::= l_classes:l_cl _class:cl
+                  {:
+                      RESULT = new CssNode(NodeTag.L_CLASS, l_clleft, l_clright, null);
+                      RESULT.addChild(l_cl);
+                      RESULT.addChild(cl);
+                  :}
+              |
+              _class:cl
+                  {:
+                      RESULT = new CssNode(NodeTag.L_CLASS, clleft, clright, null);
+                      RESULT.addChild(cl);
+                  :}
+;
+
+_class ::= IDENTIFIER:id1 O_CURLY l_properties C_CURLY l_subclasses:l_sub
+               {:
+                   SimpleEntry<String, HashMap<Integer, Object>> pair = new SimpleEntry<String, HashMap<Integer, Object>>(id1, properties);
+                   RESULT = new CssNode(NodeTag.CLASS, id1left, id1right, pair);
+                   if(l_sub != null){
+                       RESULT.addChild(l_sub);
+                   }
+               :}
+;
+
+l_subclasses ::= l_subclasses_:l_sub
+                     {:
+                         RESULT = l_sub;
+                     :}
+                 |
+                 /* empty */
+                     {:
+                         RESULT = null;
+                     :}
+;
+
+l_subclasses_ ::= l_subclasses_:l_sub subclass:sub
+                      {:
+                          RESULT = new CssNode(NodeTag.L_SUBCLASS, l_subleft, l_subright, null);
+                          RESULT.addChild(l_sub);
+                          RESULT.addChild(sub);
+                      :}
+                  |
+                  subclass:sub
+                      {:
+                          RESULT = new CssNode(NodeTag.L_SUBCLASS, subleft, subright, null);
+                          RESULT.addChild(sub);
+                      :}
+;
+
+subclass ::= DOT IDENTIFIER:id1 O_CURLY l_subproperties C_CURLY
+                 {:
+                     SimpleEntry<String, HashMap<Integer, Object>> pair = new SimpleEntry<String, HashMap<Integer, Object>>(id1, subproperties);
+                     RESULT = new CssNode(NodeTag.SUBCLASS, id1left, id1right, pair);
+                 :}
+;
+
+l_properties ::= property:p1
+                     {:
+                         properties = new HashMap<Integer, Object>();
+                         properties.put(p1.key, p1.value);
+                     :}
+                 |
+                 l_properties property:p1
+                     {:
+                         properties.put(p1.key, p1.value);
+                     :}
+;
+
+l_subproperties ::= property:p1
+                        {:
+                            subproperties = new HashMap<Integer, Object>();
+                            subproperties.put(p1.key, p1.value);
+                        :}
+                    |
+                    l_subproperties property:p1
+                        {:
+                            subproperties.put(p1.key, p1.value);
+                        :}
+;
+
+/*property ::= SEMICOLON;*/
+
+
+property ::= BACKGROUND COLON color_value:c1 SEMICOLON
+                 {:
+                     RESULT = new MyProperty(sym.BACKGROUND, c1);
+                 :}
+             |
+             BORDER COLON BOOL_LITERAL:b1 SEMICOLON
+                 {:
+                     RESULT = new MyProperty(sym.BORDER, b1);
+                 :}
+             |
+             BORDER_COLOR COLON color_value:c1 SEMICOLON
+                 {:
+                     RESULT = new MyProperty(sym.BORDER_COLOR, c1);
+                 :}
+             |
+             BORDER_WIDTH COLON NUMBER_LITERAL:n1 SEMICOLON
+                 {:
+                     RESULT = new MyProperty(sym.BORDER_WIDTH, n1);
+                 :}
+             |
+             ALIGN COLON ALIGN_LITERAL:n1 SEMICOLON
+                 {:
+                     RESULT = new MyProperty(sym.ALIGN, n1);
+                 :}
+             |
+             FONT COLON STRING_LITERAL:s1 SEMICOLON
+                 {:
+                     RESULT = new MyProperty(sym.FONT, s1);
+                 :}
+             |
+             FONT_SIZE COLON NUMBER_LITERAL:n1 SEMICOLON
+                 {:
+                     RESULT = new MyProperty(sym.FONT_SIZE, n1);
+                 :}
+             |
+             FONT_COLOR COLON color_value:c1 SEMICOLON
+                 {:
+                     RESULT = new MyProperty(sym.FONT_COLOR, c1);
+                 :}
+             |
+             HEIGHT COLON NUMBER_LITERAL:n1 SEMICOLON
+                 {:
+                     RESULT = new MyProperty(sym.HEIGHT, n1);
+                 :}
+             |
+             WIDTH COLON NUMBER_LITERAL:n1 SEMICOLON
+                 {:
+                     RESULT = new MyProperty(sym.WIDTH, n1);
+                 :}
+;
+
+
+color_value ::= COLOR_NAME:c1
+                    {:
+                        RESULT = new Color(c1.intValue());
+                    :}
+                |
+                HEX_COLOR:c1
+                    {:
+                        RESULT = new Color(c1.intValue());
+                    :}
+                |
+                RGB O_PAREN NUMBER_LITERAL:cRed COMMA NUMBER_LITERAL:cGreen COMMA NUMBER_LITERAL:cBlue C_PAREN
+                    {:
+                        RESULT = new Color(cRed.intValue(), cGreen.intValue(), cBlue.intValue());
+                    :}
+;

@@ -1,0 +1,171 @@
+/******************************************************************************/
+/*-------------------------------H-T-M-L parser-------------------------------*/
+/******************************************************************************/
+
+//-----------------User code----------------
+//importacion y paquete
+package ParserHTML;
+import java_cup.runtime.Symbol;
+import java_cup.runtime.*;
+import java.util.LinkedList;
+import MyObjects.MyError.MyErrorType;
+import MyObjects.MyError.Phase;
+import MyObjects.MyError;
+import java.util.Locale;
+
+init with {:
+    if(!(getScanner() instanceof Lexer)){
+        System.out.println("El escaner del HTML parser no tiene un path a un archivo");
+    }
+    else{
+        Lexer tmp = (Lexer) getScanner();
+        path = tmp.getPath();
+    }
+:}
+
+parser code
+{:
+    public HtmlObjLang htmlObjLang;
+
+    private LinkedList<String> idDivs = new LinkedList<>();
+    private String noufe;
+    private String title;
+
+    private String path = "null"; //Chapuz minimo para evitar conflictos con null
+
+    public void syntax_error(Symbol s)
+    {        
+        int linea = s.left;
+        int columna = s.right;
+
+        MyError error = new MyError(MyErrorType.SYNTAX, Phase.HTML, path, linea, columna, "Error cerca de: " + sym.terminalNames[s.sym]);
+        report_error(error.msg, error);
+    }
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception
+    {        
+        int linea = s.left;
+        int columna = s.right;
+        MyError error = new MyError(MyErrorType.SYNTAX, Phase.HTML,  path, linea, columna, "Error fatal cerca de: " + sym.terminalNames[s.sym]);
+        report_fatal_error(error.msg, error);
+    }
+    public void report_error(String message, Object info){
+        MySystem.Console.println((MyError)info);
+        //Pasar a consola
+        //MyGui.MainJFrame.logln((MyError) info);
+    }
+    public void report_fatal_error(String message, Object info){
+        MySystem.Console.println((MyError)info);
+        //Pasar a consola
+        //MyGui.MainJFrame.logln((MyError) info);
+        htmlObjLang = null;
+        done_parsing();
+    }
+:}
+
+action code
+{:
+    //Nombre de la clase padre
+    LinkedList<String> divIds = new LinkedList<String>();;
+:}
+
+//Palabras reservadas:
+   //tags
+terminal          HTML_O, HEAD_O, TITLE_O, BODY_O, NOUFE_O;
+terminal String   DIV_O;
+terminal          HTML_C, HEAD_C, TITLE_C, BODY_C, NOUFE_C, DIV_C;
+//Operadores, separadores y llaves
+//Literals
+terminal String   PLAIN_TEXT;
+
+/* Non-terminals */
+non terminal HtmlObjLang        s;
+non terminal l_html_cnt, html_cnt, body, l_body_cnt;
+non terminal String l_plaintext, l_plaintext$;
+
+/* Precedences */
+
+/* The grammar */
+s ::= HTML_O l_html_cnt HTML_C 
+      {: 
+          RESULT = new HtmlObjLang(noufe, title, idDivs);
+      :}
+;
+
+l_html_cnt ::= html_cnt
+               |
+               l_html_cnt html_cnt
+;
+
+html_cnt ::= HEAD_O TITLE_O l_plaintext:p TITLE_C HEAD_C //title tag
+                 {:
+                     if(p == null){
+                     }
+                     else {
+                         title = p;
+                     }
+                 :}
+             |
+             body
+;
+
+body ::= BODY_O l_body_cnt BODY_C
+;
+
+l_body_cnt ::= NOUFE_O l_plaintext:p NOUFE_C
+                   {:
+                       if(p == null){
+                       }
+                       else {
+                           noufe = p;
+                       }
+                   :}
+               |
+               DIV_O:id DIV_C 
+                   {:
+                       id = id.toLowerCase(Locale.ROOT);
+                       if(idDivs.remove(id)){
+                           String msg = "id div: [" + id + "] definido 1 o mas veces";
+                           MyError error = new MyError(MyError.MyErrorType.SEMANTIC, MyError.Phase.HTML, path, idleft, idright, msg);
+                           MySystem.Console.println(error);
+                       }
+                       
+                       idDivs.add(id);
+                   :}
+               |
+               l_body_cnt NOUFE_O l_plaintext:p NOUFE_C
+                   {:
+                       if(p == null){
+                       }
+                       else {
+                           noufe = p;
+                       }
+                   :}
+               |
+               l_body_cnt DIV_O:id DIV_C
+                   {:
+                       id = id.toLowerCase(Locale.ROOT);
+                       if(idDivs.remove(id)){
+                           String msg = "id div: " + id + "definido 1 o mas veces";
+                           MyError error = new MyError(MyError.MyErrorType.SEMANTIC, MyError.Phase.HTML, path, idleft, idright, msg);
+                           MySystem.Console.println(error);
+                       }
+                       
+                       idDivs.add(id);
+                   :}
+;
+
+l_plaintext ::= l_plaintext$:p {: RESULT = p; :}
+                |
+                /* empty */
+                {:
+                    RESULT = null;
+                :}
+;
+
+l_plaintext$ ::= PLAIN_TEXT:p {: RESULT = p; :}
+                 |
+                 PLAIN_TEXT:p l_plaintext$:s
+                 {: 
+                     RESULT = p + s;
+                 :}
+;

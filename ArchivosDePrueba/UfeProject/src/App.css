@@ -1,0 +1,61 @@
+panel
+{ /**Comentario
+	*multi línea**/
+	background: white;
+	border-width: 10;
+	align: right;
+	font-size: 20;
+	height : 300; 
+	width : 500;
+}
+texto
+{ /**Comentario
+	*multi línea**/
+	border: true;
+	background: #00fe90;
+	font-size: 20;
+	font: 'Courier New';
+	align: right;
+}
+	.campo //Sub estilo 3
+	{	
+		font-size: 20;
+		border-width: 5;
+		border-color: #0000ff;
+		font: 'Comic Sans MS';
+		font-color: red;
+		background: #00fe90;
+	}
+	.campo2
+	{
+		font-size: 8;
+	}
+panel3
+{ /**Comentario
+	*multi línea**/
+	height : 190;
+	width : 240;
+	background : #ff0000;
+}
+	.panelInput3 /*Sub estilo 1*/
+	{
+		background : #0000ff;
+		border-width : 5;
+		border-color : #00ff00;
+	}
+	.panelOutput3 /*Sub estilo 2*/
+	{
+		background: blue;
+		border: true;
+		background: rgb(10,10,10);
+		background: #9beef0;
+		font-size: 10;
+		font: 'Otra font';
+		font-color: rgb(10,10,10);
+	}
+	.Auxiliar3 //Sub estilo 3
+	{	
+		border: true;
+		width:101;
+		font-size: 10;
+	}

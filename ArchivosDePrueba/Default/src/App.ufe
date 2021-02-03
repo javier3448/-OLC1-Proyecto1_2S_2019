@@ -1,0 +1,56 @@
+import "./App.css";
+
+render(<panelBienvenida/>, divBienvenida);
+
+var titulo = "Bienvenido";
+var nombre0 = "Javier", nombre1 = "Antonio";
+var apellidos = "Alvarez" + " Gonzalez";
+
+var carneInt0 = 201612;
+var carneInt1 = 166 + - ((2 pow 5 + 27/3)*2 + 10/10);
+
+var someInt = 3;
+var otherInt = 3;
+var visible = someInt > otherInt || someInt <= otherInt;
+
+var charHolaMundo = {'H', 'o', 'l', 'a', ' ', 'm', 'u', 'n', 'd', 'o', ' ', '!'};
+var charHolaMundoSize = 12;
+
+component panelBienvenida(){
+	
+	var stringHolaMundo = "";
+	var i = 0;
+	
+	repetir(charHolaMundoSize){
+		stringHolaMundo = stringHolaMundo + charHolaMundo[i];
+		i = i + 1;
+	}
+	imprimir(stringHolaMundo);
+
+	stringHolaMundo = "";
+	mientras(i > 0){
+		stringHolaMundo = stringHolaMundo + charHolaMundo[i-1];
+		i = i - 1;
+	}
+	imprimir(stringHolaMundo);
+
+	SI(!visible){
+		return(</panelVacio>);
+	}
+	
+	
+	return (
+		<panel x = 0  y = 0 classname = "panelprincipal">
+			<text y = 20 id = titulo classname = "texto titulo" >{titulo}</text>
+			<text y = 80 id = nombres classname = "texto subtitulo" >{nombre0 + " " + nombre1}</text>
+			<text y = 140 id = apellidos classname = "texto subtitulo" >{apellidos}</text>
+			<text y = 200 id = apellidos classname = "texto subtitulo" >{carneInt0 + "" + carneInt1}</text>
+		</panel>
+	);
+
+}
+
+component panelVacio(){
+	var errroMsg = "No se pudo mostrar la bienvenida porque visible es igual a: " + visible;
+	return (<button id = txt onclick = {errroMsg}>No es visible</button>);
+}

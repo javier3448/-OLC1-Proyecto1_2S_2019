@@ -1,0 +1,129 @@
+import "./App.css";//se cambio estilos.css por App.css
+
+/*Area de componentes */
+import notas1 from "./s1/s1.ufe";
+//De aqui en adelante no existe ninguna direccion se cambio s1 por s(numero correspondiente)
+import notas2 from "./s2/s2.ufe";
+import notas3 from "./s3/s3.ufe";
+import notas4 from "./s4/s4.ufe";//se cambio s3 por s4
+import notas5 from "./s5/s5.ufe";//se cambio s3 por s5
+import notas6 from "./s6/s6.ufe";//se cambio s3 por s6
+import notas7 from "./s7/s7.ufe";//se cambio s3 por s7
+import notas8 from "./s8/s8.ufe";//se cambio s3 por s8
+import notas9 from "./s9/s9.ufe";//se cambio s3 por s9
+import notas10 from "./s10/s10.ufe";//se cambio s3 por s10
+
+
+/*Area de variables*/
+var indexGrade = 0;
+var indexSemester = 1;
+var listaGrados =
+{ /*         0         ,          1   ,       2    ,    3     ,    4    ,       5            */
+  "Ciencias y sistemas", "Electrónica", "Electrica","Mecánica","Química","Mecanica Industrial"
+};
+
+var listaEscuelas[6];//Se cambio el 5 por 6
+listaEscuelas[5] = "Escuela de mecanica industrial";
+listaEscuelas[4] = "Escuela de ingeniería química";
+listaEscuelas[3] = "Escuela de mecanica ";
+listaEscuelas[2] = "Escuela de mecanica electrica";
+listaEscuelas[1] = "Escuela de telecomunicaciones";
+listaEscuelas[0] = "Escuela de ciencias y sistemas";
+
+render (</pagina> , todapagina);
+//render (</pagina> , todapagina2); // Error 
+
+Component pagina()
+{
+     return
+     (
+          <panel id= principal x = 0 y = 0 height = 480 width = 1010 color = "gray">          
+               </notas1>
+               </panelTitulo>
+               </panelNotas>
+               </panelDescripcion>          
+          </panel>          
+     );
+}
+
+component panelTitulo()
+{
+     return
+     (
+          <panel id= paneltitulo x = 0 y = 0 className="panel" height = 500 width = 380>   
+               <text x = 20 y = 40 height = 28 width = 491 className ="titulo">
+                    Universidad de San Carlos de Guatemala
+               </text>
+               <text x = 57 y = 51 height = 28 width = 360 className ="titulo notas">
+                    {listaEscuelas[indexGrade]}
+               </text>                         
+               <text x = 658 y = 62 height = 28 width = 288 className ="titulo notas">
+                    Pensum de estudios
+               </text>                                        
+          </panel>               
+     );
+}
+
+component panelDescripcion()
+{
+     var anio = 2019;
+     return
+     (          
+          <panel id= panelDescripcion x = 500 y = 100 height = 500 width = 380 className="panel">                  
+               <text x =10  y = 30 height = 28 width = 198 className ="titulo">
+                    Descripción
+               </text>                    
+               <text x = 40 y = 130 height = 30 width = 410 className ="titulo notas">
+                    {listaEscuelas[indexGrade] + "  " + anio}
+               </text>                   
+               <text x = 40 y = 80 height = 30 width = 410 className ="titulo notas">
+                    {listaGrados[indexGrade] + "  " + anio}
+               </text>                                        
+          </panel>               
+     );
+}
+
+component panelNotas()//Se agrego ()
+{
+     si(indexSemester==1)
+     {
+          return(</notas1>);
+     }
+     si(indexSemester==2)
+     {
+          return(</notas2>);
+     }
+     si(indexSemester==3)
+     {
+          return(</notas3>);
+     }
+     si(indexSemester==4)
+     {
+          return(</notas4>);
+     }
+     si(indexSemester==5)
+     {
+          return(</notas5>);
+     }
+     si(indexSemester==6)
+     {
+          return(</notas6>);
+     }
+     si(indexSemester==7)
+     {
+          return(</notas7>);
+     }
+     si(indexSemester==8)
+     {
+          return(</notas8>);
+     }
+     si(indexSemester==9)
+     {
+          return(</notas9>);
+     }                                        
+     si(indexSemester==10)
+     {
+          return(</notas10>);
+     }                        
+}
+

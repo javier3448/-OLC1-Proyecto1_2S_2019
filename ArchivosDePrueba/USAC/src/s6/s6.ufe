@@ -1,0 +1,71 @@
+import "./estilo.css";
+
+var clases =  {"Idioma técnico 1", "Deportes 1","Tecnica Complementaria 1","Matematica básica 1", "Quimica General 1"};
+var notas =  
+{
+     100-100*2/2-33.33*100*-1-3/3-3300+30 /*62 */,
+     10+20+33*3/3+100*2-3+33*2-33+33-350+77+10 /*63 */,
+     1+2*3*3*12/3*3*33*1-22*3-7000-15 /*48*/,
+     3*30-22/3*34+(202)+293+(-100)-(10/3*3+45)-10*10 /*80.66667 */,
+     100-39-2 /*59*/
+}
+;
+var resultado = {"Aprobado", "Aprobado","Reprobado", "Aprobado","Reprobado"};
+var semestre = "Primer semestre";
+
+component notas6()//se cambio de notas1 a notas6
+{
+     return
+     (          
+          <panel x = 0 y = 100 height = 500 width =380 className = "panel notas">               
+               <text x = 30 y = 10 height = 28 width = 198>
+               {semestre}
+               </text>               
+               <button x = 10 y = 60 height = 40 width = 190 onclick = {resultado[0]} className = "curso aprobado">
+                    {clases[0]}
+               </button>
+               <button x = 10 y = 110 height = 40 width = 190 onclick = {resultado[1]} className = "curso aprobado">
+                    {clases[1]}
+               </button>
+               <button x = 10 y = 160 height = 40 width = 190 onclick = {resultado[2]} className = "curso NoAprobado">
+                    {clases[2]}
+               </button>
+               <button x = 10 y = 210 height = 40 width = 190 onclick = {resultado[3]} className = "curso aprobado">
+                    {clases[3]}
+               </button>
+               <button x = 10 y = 260 height = 40 width = 190 onclick = {resultado[4]} className = "curso NoAprobado">
+                    {clases[4]}
+               </button>  
+               <text x = 230 y = 60 height = 40 width = 40 className = "curso aprobado">
+                    {notas[0]}
+               </text>               
+               <text x = 230 y = 110 height = 40 width = 40 className = "curso aprobado">
+                    {notas[1]}
+               </text>               
+               <text x = 230 y = 160 height = 40 width = 40 className = "curso noaprobado">
+                    {notas[2]}
+               </text>               
+               <text x = 230 y = 210 height = 40 width = 40 className = "curso aprobado">
+                    {notas[3]}
+               </text>               
+               <text x = 230 y = 260 height = 40 width = 40 className = "curso noaprobado">
+                    {notas[4]}
+               </text>                           
+               <spinner x = 290 y = 60  height = 30 width = 30 className = "titulo" max = 100 min = 0>50</spinner >               
+               <spinner x = 290 y = 110 height = 30 width = 30 className = "titulo" max = 100 min = 0>50</spinner >               
+               <spinner x = 290 y = 160  height = 30 width = 30 className = "titulo" max = 100 min = 0>50</spinner >               
+               <spinner x = 290 y = 210 height = 30 width = 30 className = "titulo" max = 100 min = 0>50</spinner >               
+               <spinner x = 290 y = 260  height = 30 width = 30 className = "titulo" max = 100 min = 0>50</spinner >                              
+               <list x = 250 y = 10 className = "titulo">
+                    <elements>
+                         <item>{clases[0]}</item>
+                         <item>{clases[1]}</item>
+                         <item>{clases[2]}</item>
+                         <item>{clases[3]}</item>
+                         <item>{clases[4]}</item>                         
+                    </elements>
+                    <default> 0 </default>
+               </list>               
+          </panel>
+     );
+}

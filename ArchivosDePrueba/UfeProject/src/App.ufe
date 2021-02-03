@@ -1,0 +1,38 @@
+render(<panelInicial/>, root);
+
+var margen = 5;
+var x = 0, y = 0;
+var height = 500, width = 500;
+
+//var miColor=65280‬;
+//var toggle =  true;
+
+//var green = 65290;
+//var red = 16711680;
+
+component panelInicial(){
+	
+	return (
+	<panel id = inicial x = {x} y = {y} width = {width} height = {height} border = 1>
+		</panelR>
+	</panel>);
+}
+
+component panelR(){
+
+	margen = margen + 5;
+
+	SI(margen >= 250){
+		return(<text id = vacio width = 0 height = 0>J</text>);
+	}
+	
+	width = width - margen * 2;
+	height = height - margen * 2;
+	
+	return (
+		<panel x = {margen} y = {margen} border = 1 width = {width} height = {height}>
+			</panelR>
+		</panel>
+	);
+
+}

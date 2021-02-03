@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project-private xmlns="http://www.netbeans.org/ns/project-private/1">
+    <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="2">
+        <file>
+            <url>src/compi1/proyecto1/MyGeneric.java</url>
+            <bookmark id="2">
+                <name/>
+                <line>12</line>
+                <key/>
+            </bookmark>
+        </file>
+        <file>
+            <url>src/ParserCSS/scannerSpecification.jflex</url>
+            <bookmark id="1">
+                <name/>
+                <line>134</line>
+                <key/>
+            </bookmark>
+        </file>
+    </editor-bookmarks>
+    <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
+        <group>
+            <file>file:/C:/Users/javie/Dropbox/Colegio/2019/Semestre%202/Compi1/Proyecto%201/Source/%5BCompi1%5DProyecto1/src/UfeNodes/Expr.java</file>
+            <file>file:/C:/Users/javie/Dropbox/Colegio/2019/Semestre%202/Compi1/Proyecto%201/Source/%5BCompi1%5DProyecto1/src/compi1/proyecto1/Compi1Proyecto1.java</file>
+            <file>file:/C:/Users/javie/Dropbox/Colegio/2019/Semestre%202/Compi1/Proyecto%201/Source/%5BCompi1%5DProyecto1/src/ParserUFE/parserSpecification.cup</file>
+            <file>file:/C:/Users/javie/Dropbox/Colegio/2019/Semestre%202/Compi1/Proyecto%201/Source/%5BCompi1%5DProyecto1/src/FileManager/GeneradorCup.java</file>
+            <file>file:/C:/Users/javie/Dropbox/Colegio/2019/Semestre%202/Compi1/Proyecto%201/Source/%5BCompi1%5DProyecto1/src/UfeEnvironment/Runner.java</file>
+            <file>file:/C:/Users/javie/Dropbox/Colegio/2019/Semestre%202/Compi1/Proyecto%201/Source/%5BCompi1%5DProyecto1/src/ParserUFE/parser.java</file>
+            <file>file:/C:/Users/javie/Dropbox/Colegio/2019/Semestre%202/Compi1/Proyecto%201/Source/%5BCompi1%5DProyecto1/src/MySystem/Console.java</file>
+            <file>file:/C:/Users/javie/Dropbox/Colegio/2019/Semestre%202/Compi1/Proyecto%201/Source/%5BCompi1%5DProyecto1/src/FileManager/FileHelper.java</file>
+            <file>file:/C:/Users/javie/Dropbox/Colegio/2019/Semestre%202/Compi1/Proyecto%201/Source/%5BCompi1%5DProyecto1/src/MyGUI/MainJFrame.java</file>
+            <file>file:/C:/Users/javie/Dropbox/Colegio/2019/Semestre%202/Compi1/Proyecto%201/Source/%5BCompi1%5DProyecto1/src/UfeNodes/Ufex.java</file>
+            <file>file:/C:/Users/javie/Dropbox/Colegio/2019/Semestre%202/Compi1/Proyecto%201/Source/%5BCompi1%5DProyecto1/src/ParserUFE/scannerSpecification.jflex</file>
+            <file>file:/C:/Users/javie/Dropbox/Colegio/2019/Semestre%202/Compi1/Proyecto%201/Source/%5BCompi1%5DProyecto1/src/FileManager/GeneradorJFlex.java</file>
+        </group>
+    </open-files>
+</project-private>

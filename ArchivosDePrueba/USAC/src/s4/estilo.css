@@ -1,0 +1,59 @@
+panel /*Estilo general para los paneles.*/
+{
+     border: true;
+     border-color: yellow;
+     border-width: 3;
+     width: 1000;
+     height: 100;
+}
+.Notas /*Sub estilo 2*/
+{
+     background: rgb(153, 255, 255);
+     border-width: 1;
+     width: 500;
+     height: 380;     
+}
+.Descripcion /*Sub estilo 3*/
+{
+     background: #43b421;
+     border-width: 1;
+     width: 500;
+     height: 380;     
+}
+
+titulo /*Estilos para los títulos*/
+{
+     font: 'Times New Romans';
+     align: left;
+     font-color: #000000;
+     font-size:24;     
+}
+.subtitulo 
+{
+     font: 'Times New Romans';
+     align: left;
+     font-color: #000000;
+     font-size: 18;          
+}
+.texto
+{
+     font: 'Comics Sans MS';
+     align: left;
+     font-color: #000000;
+     font-size:18;          
+}
+
+curso
+{
+     font: 'Consolas';
+     align: left;     
+     font-size: 12;       
+}
+.Aprobado
+{
+     font-color: black; /* Color rojo*/
+}
+.NoAprobado
+{
+     font-color: rgb(204, 0, 0); /* Color rojo*/
+}

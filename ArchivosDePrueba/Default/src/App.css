@@ -1,0 +1,34 @@
+texto
+{ /**Comentario
+	*multi línea**/
+	font-size: 10;
+	font: 'Comic Sans MS';
+	align: center;
+	font-color: black;
+	height: 30;
+	width:600;
+}
+	.titulo 
+	{	
+		font-size: 20;
+		font: 'Courier New';
+		font-color: #0465b5;
+		border-width: 2;
+		height:50;
+	}
+	.subtitulo
+	{
+		font: 'Courier New';
+		font-color: #04cfde;
+		font-size: 15;
+		height:40;
+	}
+panelprincipal
+{ /**Comentario
+	*multi línea**/
+	width :600;
+	height : 300;
+	background : #c2a99d;
+	border-color: #403733;
+	border-width: 4;
+}

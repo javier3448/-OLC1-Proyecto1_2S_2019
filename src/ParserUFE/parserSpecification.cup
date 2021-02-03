@@ -1,0 +1,937 @@
+/****************************************************************************/
+/*-------------------------------U-F-E parser-------------------------------*/
+/****************************************************************************/
+
+//-----------------User code----------------
+//importacion y paquete
+package ParserUFE;
+import java_cup.runtime.Symbol;
+import java_cup.runtime.*;
+import java.util.AbstractMap.SimpleEntry;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.awt.Color;
+import MyObjects.MyError.MyErrorType;
+import MyObjects.MyError.Phase;
+import MyObjects.MyError;
+import UfeNodes.*;
+import UfeNodes.Ufex.*;
+
+init with {:
+    if(!(getScanner() instanceof Lexer)){
+        System.out.println("El escaner del UFE parser no tiene un path a un archivo");
+    }
+    else{
+        Lexer tmp = (Lexer) getScanner();
+        path = tmp.getPath();
+    }
+:}
+
+parser code
+{:
+    public Root root;
+    
+    private String path = "null"; //Chapuz minimo para evitar conflictos con null
+
+    public void syntax_error(Symbol s)
+    {        
+        int linea = s.left;
+        int columna = s.right;
+
+        MyError error = new MyError(MyErrorType.SYNTAX, Phase.UFE, path, linea, columna, "Error cerca de: " + sym.terminalNames[s.sym] + 
+                                    (s.value == null ? "" : ". value: [" + s.value.toString() + "]"));
+        report_error(error.msg, error);
+    }
+    public void unrecovered_syntax_error(Symbol s) throws java.lang.Exception
+    {        
+        int linea = s.left;
+        int columna = s.right;
+        MyError error = new MyError(MyErrorType.SYNTAX, Phase.UFE,  path, linea, columna, "Error fatal cerca de: " + sym.terminalNames[s.sym] + 
+                                    (s.value == null ? "" : ". value: [" + s.value.toString() + "]"));
+        report_fatal_error(error.msg + " linea: " + linea, error);
+    }
+    public void report_error(String message, Object info){
+        MySystem.Console.println((MyError)info);
+        //Pasar a consola
+        //MyGui.MainJFrame.logln((MyError) info);
+    }
+    public void report_fatal_error(String message, Object info){
+        MySystem.Console.println((MyError)info);
+        root = null;
+        //Pasar a consola
+        //MyGui.MainJFrame.logln((MyError) info);
+        done_parsing();
+    }
+:}
+
+action code
+{:
+    public LinkedList<Stmt> globalStmts = new LinkedList<>();
+    public LinkedList<UfeImport> ufeImports = new LinkedList<>();
+    public CssImport cssImport = new CssImport(null);
+    public LinkedList<Render> renders = new LinkedList<Render>();
+    public LinkedList<Def> defs = new LinkedList<>();//PENDIENTE PASAR A ACTION CODE Y QUITAR EL PUBLIC
+
+    private PropType getPropType(Integer symbol){
+        switch (symbol) {
+            case sym.ID:
+                return PropType.ID;                
+            case sym.X:
+                return PropType.X;
+            case sym.Y:
+                return PropType.Y;
+            case sym.WIDTH:
+                return PropType.WIDTH;
+            case sym.HEIGHT:
+                return PropType.HEIGHT;
+            case sym.COLOR:
+                return PropType.COLOR;
+            case sym.BORDER:
+                return PropType.BORDER;
+            case sym.CLASSNAME:
+                return PropType.CLASSNAME;
+            case sym.ONCLICK:
+                return PropType.ONCLICK;
+            case sym.MIN:
+                return PropType.MIN;
+            case sym.MAX:
+                return PropType.MAX;
+            case sym.SRC:
+                return PropType.SRC;
+            default:
+                 throw new AssertionError("Integer symbol no es un propType valido");
+        }
+    }
+:}
+
+//Palabras reservadas:
+terminal            VAR, RENDER, RETURN, COMPONENT, IMPORT, FROM, SI, SINO, REPETIR, MIENTRAS, IMPRIMIR;
+
+terminal            ID, X, Y, HEIGHT, WIDTH, COLOR, BORDER, CLASSNAME, ONCLICK, MIN, MAX, SRC;
+terminal            PANEL_O, TEXT_O, TEXTFIELD_O, BUTTON_O, LIST_O, SPINNER_O, IMAGE_O, ELEMENTS_O, ITEM_O, DEFAULT_O,
+                    PANEL_C, TEXT_C, TEXTFIELD_C, BUTTON_C, LIST_C, SPINNER_C, IMAGE_C, ELEMENTS_C, ITEM_C, DEFAULT_C;
+terminal String     CUSTOM_O, CUSTOM_C;
+
+//Operadores, separadores y llaves
+terminal            O_PAREN, C_PAREN, O_CURLY, C_CURLY, O_BOX, C_BOX, COMMA, SEMICOLON, EQ, 
+                    UMINUS, PLUS, MINUS, MULT, DIV, POW, LESS, GREATER, LESS_EQ, GREATER_EQ, EQ_EQ, NOT_EQ, AND, OR, XOR, NOT;
+
+//Literals
+terminal String     STRING_LITERAL;
+terminal Double     DOUBLE_LITERAL;
+terminal Integer    INTEGER_LITERAL;
+terminal Character  CHARACTER_LITERAL;
+terminal Boolean    BOOLEAN_LITERAL;
+
+terminal Integer    COLOR_LITERAL;
+terminal String     PLAIN_TEXT;
+
+//Non literals
+terminal String     IDENTIFIER;
+
+/* Non-terminals */
+non terminal Root                       s;
+non terminal                            glob, l_glob, ufe_import, css_import, render, component_def; //todos los non terminals que definen el entorno globa, retorna nada solo guardan sus valores en listas globales. para que s puede crear un nuevo root
+non terminal LinkedList<Stmt>           l_stmts, l_stmts$; //stmt: statement, $: prime of non terminal
+non terminal Stmt                       stmt;
+non terminal Stmt.Decl                  decl;
+non terminal Stmt.ArrayDecl             array_decl;
+non terminal Stmt.Assign                assign;
+non terminal Stmt.ArrayAssign           array_assign;
+non terminal Expr                       expr;
+non terminal Expr.IdExpr                id_expr;
+non terminal Expr.ArrayIndexExpr        arrayindex_expr;
+non terminal Expr.AtomicExpr            atomic_expr;
+non terminal Expr.ULogicExpr            ulogic_expr;
+non terminal Expr.UArithExpr            uarith_expr;
+non terminal Expr.BiCompExpr            bicomp_expr;
+non terminal Expr.BiLogicExpr           bilogic_expr;
+non terminal Expr.BiArithExpr           biarith_expr;
+non terminal Expr.BiConcatExpr          biconcat_expr;
+non terminal LinkedList<Expr>           l_expr;
+non terminal LinkedList<Stmt.Decl.Item> l_decl_items;//Tentativamente: devuelve una lista de Decl.Item
+non terminal Stmt.Decl.Item             decl_item;
+non terminal Stmt.Print                 print;
+non terminal Stmt.Block                 block;
+non terminal Stmt._If                   _if;
+non terminal Stmt._IfElse               _if_else;
+non terminal _Else                      else_content;//Todos los stmt que puede tener else 
+non terminal Stmt.Repeat                repeat;
+non terminal Stmt._While                _while;
+non terminal Stmt.Return                _return;
+//Ufex:
+non terminal LinkedList<Comp>                  l_comps, l_comps$;//Comps: component
+non terminal HashMap<PropType, PropValue>      l_props, l_props$;
+non terminal SimpleEntry<PropType, PropValue>  prop;
+non terminal PropValue                         prop_value;
+non terminal Comp                              comp;
+non terminal Comp.Default.Panel                        panel;
+non terminal Comp.Default.Text                         text;
+non terminal Comp.Default.TextField                    text_field;
+non terminal Comp.Default.Button                       button;
+non terminal Comp.Default.List                         list;
+non terminal Comp.Default.Spinner                      spinner;
+non terminal Comp.Default.Image                        image;
+non terminal Comp.Custom                       custom;
+non terminal CntGroup                          cnt_group;//Can be empty
+non terminal LinkedList<Cnt>                   cnt_l;
+non terminal LinkedList<CntGroup>              list_cnt, list_cnt$; //lo que va adentro de una tag list i.e. multiples items 
+non terminal CntGroup                          list_default; //default de una lista, puede venir vacio
+non terminal Cnt.EmbUfe                        embedded_ufe;
+
+/* Precedences */
+precedence left     SINO;
+
+precedence left     OR;
+precedence left     AND;
+precedence left     XOR;
+precedence nonassoc GREATER, LESS, GREATER_EQ, LESS_EQ, EQ_EQ, NOT_EQ;
+precedence left PLUS, MINUS;
+precedence left MULT, DIV;
+precedence left POW;
+precedence left UMINUS;
+precedence right    NOT;
+
+
+/* The grammar */
+s ::= l_glob
+        {:
+             root = new Root(path, globalStmts, ufeImports, cssImport, renders, defs);
+             RESULT = root;
+        :}
+      |
+      /*empty*/
+        {:
+            root = new Root(path, globalStmts, ufeImports, cssImport, renders, defs);
+            RESULT = root;
+            System.out.println("parser ufe: root vacia");
+        :}
+;
+
+l_glob ::= glob
+           |
+           l_glob glob
+;
+
+//Solo es necesario agregar a una lista desde aqui en decl y assign porque las demas producciones agregan a su lista desde que se encuentra la produccion
+glob ::= decl:d
+         {:
+             globalStmts.add(d);
+         :}
+         |
+         assign:d
+         {:
+             globalStmts.add(d);
+         :}
+         |
+         array_decl:d
+         {:
+             globalStmts.add(d);
+         :}
+         |
+         array_assign:d
+         {:
+             globalStmts.add(d);
+         :}
+         |
+         ufe_import
+         |
+         css_import
+         |
+         render
+         |
+         component_def
+;
+
+ufe_import ::= IMPORT:t IDENTIFIER:id FROM STRING_LITERAL:dir SEMICOLON
+                   {:
+                       UfeImport ui = new UfeImport(id, dir);
+                       ui.setLocation(tleft, tright);
+                       ufeImports.add(ui);
+                   :}
+;
+
+css_import ::= IMPORT:t STRING_LITERAL:dir SEMICOLON
+                  {:
+                      CssImport ci = new CssImport(dir);
+                      ci.setLocation(tleft, tright);
+                      cssImport = ci;
+                  :}
+;
+
+render ::= RENDER:t O_PAREN LESS IDENTIFIER:compId DIV GREATER COMMA IDENTIFIER:divId C_PAREN SEMICOLON
+               {:
+                   Render r = new Render(compId, divId);
+                   r.setLocation(tleft, tright);
+                   renders.add(r);    
+               :}
+           |
+           RENDER:t O_PAREN LESS DIV IDENTIFIER:compId GREATER COMMA IDENTIFIER:divId C_PAREN SEMICOLON //CHAPUZ PORQUE EL ARCHIVO EJEMPLO QUE MANDARON CONTRADICE AL ENUNCIADO
+               {:
+                   Render r = new Render(compId, divId);
+                   r.setLocation(tleft, tright);
+                   renders.add(r);    
+               :}
+;
+
+component_def ::= COMPONENT IDENTIFIER:id O_PAREN C_PAREN O_CURLY l_stmts:statements C_CURLY
+                  {:
+                        Def def = new Def(id, statements);
+                        def.setLocation(idleft, idright);
+                        defs.add(def);
+                  :}
+;
+
+l_stmts ::= l_stmts$:statements
+            {:
+                RESULT = statements;
+            :}
+            |
+            {:
+                RESULT = new LinkedList<Stmt>();
+            :}
+;
+
+l_stmts$ ::= stmt:statement
+             {:
+                 RESULT = new LinkedList<Stmt>();
+                 RESULT.add(statement);
+             :}
+             |
+             l_stmts$:statements stmt:statement
+             {:
+                 RESULT = statements;
+                 RESULT.add(statement);
+             :}
+;
+
+stmt ::= decl:d {: RESULT = d; :}
+         |
+         assign:a {: RESULT = a; :}
+         |
+         array_decl:a_d {: RESULT = a_d; :}
+         |
+         array_assign:a_a {: RESULT = a_a; :}
+         |
+         print:p {: RESULT = p; :}
+         |
+         _return:p {: RESULT = p; :}
+         |
+         _if_else:f {: RESULT = f; :}
+         |
+         _if:f {: RESULT = f; :}
+         |
+         repeat:r {: RESULT = r; :}
+         |
+         _while:w {: RESULT = w; :}
+;
+
+decl ::= VAR:v l_decl_items:items SEMICOLON
+         {:
+            RESULT = new Stmt.Decl(items);
+            RESULT.setLocation(vleft, vright);
+         :}
+;
+
+l_decl_items ::= decl_item:item
+                 {:
+                    RESULT = new LinkedList<Stmt.Decl.Item>();
+                    RESULT.add(item);
+                 :}
+                 |
+                 l_decl_items:items COMMA decl_item:item
+                 {:
+                    RESULT = items;
+                    RESULT.add(item);
+                 :}
+;
+
+decl_item ::= IDENTIFIER:id EQ expr:e
+                  {:
+                      RESULT = new Stmt.Decl.Item(id, e);
+                  :}
+              |
+              IDENTIFIER:id
+                  {:
+                      RESULT = new Stmt.Decl.Item(id, new Expr.AtomicExpr(null));
+                  :}
+;
+
+assign ::= IDENTIFIER:id EQ expr:e SEMICOLON
+           {:
+               RESULT = new Stmt.Assign(id, e);
+               RESULT.setLocation(idleft, idright);
+           :}
+;
+
+array_decl ::= VAR:v IDENTIFIER:id O_BOX expr:e C_BOX SEMICOLON
+               {:
+                   RESULT = new Stmt.ArrayDecl(id, e);
+                   RESULT.setLocation(vleft, vright);
+               :}
+               |
+               VAR:v IDENTIFIER:id EQ O_CURLY l_expr:l_e C_CURLY SEMICOLON
+               {:
+                   RESULT = new Stmt.ArrayDecl(id, l_e);
+                   RESULT.setLocation(vleft, vright);
+               :}
+;
+
+array_assign ::= IDENTIFIER:id O_BOX expr:eIndex C_BOX EQ expr:eValue SEMICOLON
+                     {:
+                         RESULT = new Stmt.ArrayAssign(id, eIndex, eValue);
+                         RESULT.setLocation(idleft, idright);
+                     :}
+;
+
+_return ::= RETURN:r O_PAREN l_comps:l_c C_PAREN SEMICOLON
+                {:
+                    RESULT = new Stmt.Return(l_c);
+                    RESULT.setLocation(rleft, rright);
+                :}
+;
+
+print ::= IMPRIMIR:r O_PAREN expr:e C_PAREN SEMICOLON
+              {:
+                  RESULT = new Stmt.Print(e);
+                  RESULT.setLocation(rleft, rright);
+              :}
+;
+
+block ::= O_CURLY:o_curly l_stmts:l_s C_CURLY
+            {:
+                RESULT = new Stmt.Block(l_s);
+                RESULT.setLocation(o_curlyleft, o_curlyright);
+            :}
+;
+
+_if ::= SI:si O_PAREN expr:cond C_PAREN block:b
+            {:
+                RESULT = new Stmt._If(cond, b);
+                RESULT.setLocation(sileft, siright);
+            :}
+;
+
+_if_else ::= SI:si O_PAREN expr:cond C_PAREN block:b SINO else_content:e_c
+             {:
+                 RESULT = new Stmt._IfElse(cond, b, e_c);
+                 RESULT.setLocation(sileft, siright);
+             :}
+;
+
+else_content ::= block:st
+                     {:
+                         RESULT = new _Else(st);
+                         RESULT.setLocation(stleft, stright);
+                     :}
+                 |
+                 _if:st
+                     {:
+                         RESULT = new _Else(st);
+                         RESULT.setLocation(stleft, stright);
+                     :}
+                 |
+                 _if_else:st
+                     {:
+                         RESULT = new _Else(st);
+                         RESULT.setLocation(stleft, stright);
+                     :}
+;            
+
+repeat ::= REPETIR:r O_PAREN expr:limit C_PAREN block:b
+               {:
+                   RESULT = new Stmt.Repeat(limit, b);
+                   RESULT.setLocation(rleft, rright);
+               :}
+;
+
+_while ::= MIENTRAS:r O_PAREN expr:cond C_PAREN block:b
+               {:
+                   RESULT = new Stmt._While(cond, b);
+                   RESULT.setLocation(rleft, rright);
+               :}
+;
+
+l_expr ::= expr:e
+               {:
+                   RESULT = new LinkedList<Expr>();
+                   RESULT.add(e);
+               :}
+           |
+           l_expr:l_e COMMA expr:e
+               {:
+                   RESULT = l_e;
+                   RESULT.add(e);
+               :}
+;
+
+expr ::= atomic_expr:e {: RESULT = e; :}
+         |
+         id_expr:e {: RESULT = e; :}
+         |
+         arrayindex_expr:e {: RESULT = e; :}
+         |
+         ulogic_expr:e {: RESULT = e; :}
+         |
+         uarith_expr:e {: RESULT = e; :}
+         |
+         bicomp_expr:e {: RESULT = e; :}
+         |
+         bilogic_expr:e {: RESULT = e; :}
+         |
+         biarith_expr:e {: RESULT = e; :}
+         |
+         biconcat_expr:e {: RESULT = e; :}
+         |
+         O_PAREN expr:e C_PAREN {: RESULT = e;:}
+;
+
+atomic_expr ::= STRING_LITERAL:val
+         {:
+             RESULT = new Expr.AtomicExpr(val);
+             RESULT.setLocation(valleft, valright);
+         :}
+         |
+         INTEGER_LITERAL:val
+         {:
+             RESULT = new Expr.AtomicExpr(val);
+             RESULT.setLocation(valleft, valright);
+         :}
+         |
+         DOUBLE_LITERAL:val
+         {:
+             RESULT = new Expr.AtomicExpr(val);
+             RESULT.setLocation(valleft, valright);
+         :}
+         |
+         CHARACTER_LITERAL:val
+         {:
+             RESULT = new Expr.AtomicExpr(val);
+             RESULT.setLocation(valleft, valright);
+         :}
+         |
+         BOOLEAN_LITERAL:val
+         {:
+             RESULT = new Expr.AtomicExpr(val);
+             RESULT.setLocation(valleft, valright);
+         :}
+;
+
+id_expr ::= IDENTIFIER:id
+                {:
+                    RESULT = new Expr.IdExpr(id);
+                    RESULT.setLocation(idleft, idright);
+                :}
+;
+
+arrayindex_expr ::= IDENTIFIER:id O_BOX expr:e C_BOX
+                        {:
+                            RESULT = new Expr.ArrayIndexExpr(id, e);
+                            RESULT.setLocation(idleft, idright);
+                        :}
+;
+
+ulogic_expr ::= NOT:op expr:e 
+                    {:
+                        RESULT = new Expr.ULogicExpr(Expr.ULogicOp.NOT, e);
+                        RESULT.setLocation(opleft, opright);
+                    :}
+;
+
+uarith_expr ::= MINUS:op expr:e 
+                    {:
+                        RESULT = new Expr.UArithExpr(Expr.UArithOp.UMINUS, e);
+                        RESULT.setLocation(opleft, opright);
+                    :}  %prec UMINUS
+;
+
+bicomp_expr ::= expr:e1 LESS expr:e2
+                {:
+                    RESULT = new Expr.BiCompExpr(e1, Expr.BiCompOp.LESS, e2);
+                    RESULT.setLocation(e1left, e1right);
+                :}
+                |
+                expr:e1 GREATER expr:e2
+                {:
+                    RESULT = new Expr.BiCompExpr(e1, Expr.BiCompOp.GREATER, e2);
+                    RESULT.setLocation(e1left, e1right);
+                :}
+                |
+                expr:e1 LESS_EQ expr:e2
+                {:
+                    RESULT = new Expr.BiCompExpr(e1, Expr.BiCompOp.LESS_EQ, e2);
+                    RESULT.setLocation(e1left, e1right);
+                :}
+                |
+                expr:e1 GREATER_EQ expr:e2
+                {:
+                    RESULT = new Expr.BiCompExpr(e1, Expr.BiCompOp.GREATER_EQ, e2);
+                    RESULT.setLocation(e1left, e1right);
+                :}
+                |
+                expr:e1 EQ_EQ expr:e2
+                {:
+                    RESULT = new Expr.BiCompExpr(e1, Expr.BiCompOp.EQ_EQ, e2);
+                    RESULT.setLocation(e1left, e1right);
+                :}
+                |
+                expr:e1 NOT_EQ expr:e2
+                {:
+                    RESULT = new Expr.BiCompExpr(e1, Expr.BiCompOp.NOT_EQ, e2);
+                    RESULT.setLocation(e1left, e1right);
+                :}
+;
+
+bilogic_expr ::= expr:e1 AND expr:e2
+                 {:
+                     RESULT = new Expr.BiLogicExpr(e1, Expr.BiLogicOp.AND, e2);
+                     RESULT.setLocation(e1left, e1right);
+                 :}
+                 |
+                 expr:e1 OR expr:e2
+                 {:
+                     RESULT = new Expr.BiLogicExpr(e1, Expr.BiLogicOp.OR, e2);
+                     RESULT.setLocation(e1left, e1right);
+                 :}
+                 |
+                 expr:e1 XOR expr:e2
+                 {:
+                     RESULT = new Expr.BiLogicExpr(e1, Expr.BiLogicOp.XOR, e2);
+                     RESULT.setLocation(e1left, e1right);
+                 :}
+;
+
+biarith_expr ::= expr:e1 MINUS expr:e2
+                 {:
+                     RESULT = new Expr.BiArithExpr(e1, Expr.BiArithOp.MINUS, e2);
+                     RESULT.setLocation(e1left, e1right);
+                 :}
+                 |
+                 expr:e1 MULT expr:e2
+                 {:
+                     RESULT = new Expr.BiArithExpr(e1, Expr.BiArithOp.MULT, e2);
+                     RESULT.setLocation(e1left, e1right);
+                 :}
+                 |
+                 expr:e1 DIV expr:e2
+                 {:
+                     RESULT = new Expr.BiArithExpr(e1, Expr.BiArithOp.DIV, e2);
+                     RESULT.setLocation(e1left, e1right);
+                 :}
+                 |
+                 expr:e1 POW expr:e2
+                 {:
+                     RESULT = new Expr.BiArithExpr(e1, Expr.BiArithOp.POW, e2);
+                     RESULT.setLocation(e1left, e1right);
+                 :}
+;
+
+biconcat_expr ::= expr:e1 PLUS expr:e2
+                  {:
+                      RESULT = new Expr.BiConcatExpr(e1, Expr.BiConcatOp.PLUS, e2);
+                      RESULT.setLocation(e1left, e1right);
+                  :}
+;
+
+//UFEX:
+
+l_comps ::= l_comps$:lp {: RESULT = lp; :}
+           |
+           /* empty */
+           {:
+                RESULT = new LinkedList<Comp>();
+           :}
+;
+
+l_comps$ ::= l_comps$:lp comp:c
+             {: 
+                 RESULT = lp;
+                 RESULT.add(c);
+             :}
+           |
+           comp:c
+           {:
+                RESULT = new LinkedList<Comp>();
+                RESULT.add(c);
+           :}
+;
+
+comp ::= panel:c {: RESULT = c; :}
+         |
+         text:c {: RESULT = c; :}
+         |
+         text_field:c {: RESULT = c; :}
+         |
+         button:c {: RESULT = c; :}
+         |
+         list:c {: RESULT = c; :}
+         |
+         spinner:c {: RESULT = c; :}
+         |
+         image:c {: RESULT = c; :}
+         |
+         custom:c {: RESULT = c; :}
+;
+
+panel ::= PANEL_O:t l_props:lp GREATER l_comps:l_c PANEL_C GREATER
+          {:
+              RESULT = new Comp.Default.Panel(lp, l_c);
+              RESULT.setLocation(tright, tleft);
+          :}
+;
+
+text ::= TEXT_O:t l_props:lp GREATER cnt_group:cg TEXT_C GREATER
+             {:
+                 RESULT = new Comp.Default.Text(lp, cg);
+                 RESULT.setLocation(tright, tleft);
+             :}
+;
+
+text_field ::= TEXTFIELD_O:t l_props:lp GREATER cnt_group:cg TEXTFIELD_C GREATER
+                   {:
+                       RESULT = new Comp.Default.TextField(lp, cg);
+                       RESULT.setLocation(tleft, tright);
+                   :}
+;
+
+button ::= BUTTON_O:t l_props:lp GREATER cnt_group:cg BUTTON_C GREATER
+                        {:
+                            RESULT = new Comp.Default.Button(lp, cg);
+                            RESULT.setLocation(tleft, tright);
+                        :}
+;
+
+list ::= LIST_O:t l_props:lp GREATER ELEMENTS_O GREATER list_cnt:lc ELEMENTS_C GREATER list_default:ld LIST_C GREATER
+             {:
+                 RESULT = new Comp.Default.List(lp, lc, ld);
+                 RESULT.setLocation(tleft, tright);
+             :}
+;
+
+spinner ::= SPINNER_O:t l_props:lp GREATER embedded_ufe:eu SPINNER_C GREATER
+                {:
+                    RESULT = new Comp.Default.Spinner(lp, eu);
+                    RESULT.setLocation(tleft, tright);
+                :}
+            |
+            SPINNER_O:t l_props:lp GREATER PLAIN_TEXT:pt SPINNER_C GREATER
+                {:
+                    RESULT = new Comp.Default.Spinner(lp, new Cnt.PlainTxt(pt));
+                    RESULT.setLocation(tleft, tright);
+                :}
+            |
+            SPINNER_O:t l_props:lp GREATER SPINNER_C GREATER
+                {:
+                    RESULT = new Comp.Default.Spinner(lp, new Cnt.PlainTxt(null));
+                    RESULT.setLocation(tleft, tright);
+                :}
+;
+
+image ::= IMAGE_O:t l_props:lp GREATER
+          {:
+              RESULT = new Comp.Default.Image(lp);
+              RESULT.setLocation(tleft, tright);
+          :}
+;
+
+custom ::= CUSTOM_C:cc GREATER
+               {:
+                   RESULT = new Comp.Custom(cc);
+                   RESULT.setLocation(ccleft, ccright);
+               :}
+;
+
+l_props ::= l_props$:lp {: RESULT = lp; :}
+            |
+            /* empty */
+                {:
+                    RESULT = new HashMap<PropType, PropValue>();
+                :}
+                
+;
+
+l_props$ ::= l_props$:lp prop:p
+                {:
+                    RESULT = lp;
+                    RESULT.put(p.getKey(), p.getValue());
+                :}
+             |
+             prop:p
+                {:
+                    RESULT = new HashMap<PropType, PropValue>();
+                    RESULT.put(p.getKey(), p.getValue());
+                :}
+;
+
+prop ::= ID:p EQ prop_value:v
+         {:
+             RESULT = new SimpleEntry<PropType, PropValue>(PropType.ID ,v);
+         :}
+         |
+         X:p EQ prop_value:v
+         {:
+             RESULT = new SimpleEntry<PropType, PropValue>(PropType.X ,v);
+         :}
+         |
+         Y:p EQ prop_value:v
+         {:
+             RESULT = new SimpleEntry<PropType, PropValue>(PropType.Y ,v);
+         :}
+         |
+         WIDTH:p EQ prop_value:v
+         {:
+             RESULT = new SimpleEntry<PropType, PropValue>(PropType.WIDTH ,v);
+         :}
+         |
+         HEIGHT:p EQ prop_value:v
+         {:
+             RESULT = new SimpleEntry<PropType, PropValue>(PropType.HEIGHT ,v);
+         :}
+         |
+         COLOR:p EQ prop_value:v
+         {:
+             RESULT = new SimpleEntry<PropType, PropValue>(PropType.COLOR ,v);
+         :}
+         |
+         BORDER:p EQ prop_value:v
+         {:
+             RESULT = new SimpleEntry<PropType, PropValue>(PropType.BORDER ,v);
+         :}
+         |
+         CLASSNAME:p EQ prop_value:v
+         {:
+             RESULT = new SimpleEntry<PropType, PropValue>(PropType.CLASSNAME ,v);
+         :}
+         |
+         ONCLICK:p EQ prop_value:v
+         {:
+             RESULT = new SimpleEntry<PropType, PropValue>(PropType.ONCLICK ,v);
+         :}
+         |
+         MIN:p EQ prop_value:v
+         {:
+             RESULT = new SimpleEntry<PropType, PropValue>(PropType.MIN ,v);
+         :}
+         |
+         MAX:p EQ prop_value:v
+         {:
+             RESULT = new SimpleEntry<PropType, PropValue>(PropType.MAX ,v);
+         :}
+         |
+         SRC:p EQ prop_value:v
+         {:
+             RESULT = new SimpleEntry<PropType, PropValue>(PropType.SRC ,v);
+         :}
+;
+
+prop_value ::= STRING_LITERAL:s
+               {:
+                   RESULT = new PropValue.AtomicProp(s);
+                   RESULT.setLocation(sleft, sright);
+               :}
+               |
+               IDENTIFIER:s
+               {:
+                   RESULT = new PropValue.IdProp(s);
+                   RESULT.setLocation(sleft, sright);
+               :}
+               |
+               INTEGER_LITERAL:s
+               {:
+                   RESULT = new PropValue.AtomicProp(s);
+                   RESULT.setLocation(sleft, sright);
+               :}
+               |
+               MINUS INTEGER_LITERAL:s //chapuz para aceptar negativos
+               {:
+                   RESULT = new PropValue.AtomicProp(-1 * s);
+                   RESULT.setLocation(sleft, sright);
+               :}
+               |
+               COLOR_LITERAL:s
+               {:
+                   RESULT = new PropValue.AtomicProp(s);
+                   RESULT.setLocation(sleft, sright);
+               :}
+               |
+               O_CURLY expr:e C_CURLY
+               {:
+                   RESULT = new PropValue.EmbProp(e);
+               :}
+;
+
+cnt_group ::= cnt_l:cl
+              {:
+                  RESULT = new CntGroup(cl);
+              :}
+              |
+              /* empty */
+              {:
+                  RESULT = new CntGroup(new LinkedList<Cnt>());
+              :}
+;
+
+cnt_l ::= cnt_l:cl PLAIN_TEXT:c
+             {:
+                 RESULT = cl;
+                 Cnt.PlainTxt plainTxt = new Cnt.PlainTxt(c);
+                 plainTxt.setLocation(cleft, cright);
+                 RESULT.add(plainTxt);
+             :}
+             |
+             cnt_l:cl embedded_ufe:c
+             {:
+                 RESULT = cl;
+                 RESULT.add(c);
+             :}
+             |
+             PLAIN_TEXT:c
+             {:
+                 RESULT = new LinkedList<Cnt>();;
+                 Cnt.PlainTxt plainTxt = new Cnt.PlainTxt(c);
+                 plainTxt.setLocation(cleft, cright);
+                 RESULT.add(plainTxt);
+             :}
+             |
+             embedded_ufe:c
+             {:
+                 RESULT = new LinkedList<Cnt>();;
+                 RESULT.add(c);
+             :}
+;
+
+embedded_ufe ::= O_CURLY:t expr:e C_CURLY
+                 {:
+                     RESULT = new Cnt.EmbUfe(e);
+                     RESULT.setLocation(tleft, tright);
+                 :}
+;
+
+list_cnt ::= list_cnt$:lc {: RESULT = lc; :}
+             |
+             /* empty */
+             {:
+                 RESULT = new LinkedList<CntGroup>();
+             :}
+;
+
+list_cnt$ ::= list_cnt$:lc ITEM_O GREATER cnt_group:cg ITEM_C GREATER
+              {:
+                  RESULT = lc;
+                  RESULT.add(cg);
+              :}
+              |
+              ITEM_O GREATER cnt_group:cg ITEM_C GREATER
+              {:
+                  RESULT = new LinkedList<CntGroup>();
+                  RESULT.add(cg);
+              :}
+;
+
+list_default ::= DEFAULT_O GREATER cnt_group:cg DEFAULT_C GREATER {: RESULT = cg; :}
+                |
+                /* empty */ 
+                    {: 
+                        RESULT = new CntGroup(new LinkedList<Cnt>());//Content group vacio
+                    :}
+;
